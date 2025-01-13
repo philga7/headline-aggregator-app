@@ -27,10 +27,26 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # Step 4: Build the Project (Optional for Next.js)
-      - name: Build Project
+      # Step 4: Install Playwright
+      - name: Install Playwright Browsers with Config
+        run: npm exec playwright install --with-deps --config=playwright.config.ts
+
+      # Step 5: Build the Project
+      - name: Build Application
         run: npm run build
 
-      # Step 5: Deploy to Vercel
+      # Step 6: Start the Server
+      - name: Start Server
+        run: npm run start &
+
+      # Step 7: Wait for App to be Ready
+      - name: Wait for App to be Ready
+        run: npx wait-on http://localhost:3000
+
+      # Step 8: Run Playwright Tests
+      - name: Run Playwright Tests
+        run: npm run test
+
+      # Step 9: Deploy to Vercel
       - name: Deploy to Vercel
         run: npx vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}

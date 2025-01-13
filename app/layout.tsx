@@ -7,8 +7,8 @@ import { Sidebar } from '@/components/sidebar';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'News Aggregator',
-  description: 'A modern news aggregator built with Next.js',
+  title: 'Headline Aggregator',
+  description: 'A modern headline aggregator built with Next.js',
 };
 
 export default function RootLayout({
