@@ -27,26 +27,30 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # Step 4: Install Playwright
-      - name: Install Playwright
+      # Step 4: Install Playwright dependencies
+      - name: Install Playwright Dependencies
         run: sudo npx playwright install-deps
 
-      # Step 5: Build the Project
+      # Step 5: Install Playwright
+      - name: Install Playwright
+        run: npm exec playwright install
+
+      # Step 6: Build the Project
       - name: Build Application
         run: npm run build
 
-      # Step 6: Start the Server
+      # Step 7: Start the Server
       - name: Start Server
         run: npm run start &
 
-      # Step 7: Wait for App to be Ready
+      # Step 8: Wait for App to be Ready
       - name: Wait for App to be Ready
         run: npx wait-on http://localhost:3000
 
-      # Step 8: Run Playwright Tests
+      # Step 9: Run Playwright Tests
       - name: Run Playwright Tests
         run: npm run test
 
-      # Step 9: Deploy to Vercel
+      # Step 10: Deploy to Vercel
       - name: Deploy to Vercel
         run: npx vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
