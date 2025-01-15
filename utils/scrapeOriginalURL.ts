@@ -1,9 +1,18 @@
+import fetch from 'node-fetch';
+
 /**
  * Scrapes the actual third-party URL from Citizen Free Press article pages.
  * @param {string} pageURL - URL of the CFP article page.
  * @returns {Promise<string>} - Resolved original article URL.
  */
 export async function scrapeOriginalURL(pageURL: string): Promise<string> {
+    // Basic URL validation
+    try {
+        new URL(pageURL);
+    } catch {
+        return pageURL; // Return invalid URL immediately
+    }
+
     try {
       const response = await fetch(pageURL, {
         headers: { 'User-Agent': 'News Aggregator Bot' },
