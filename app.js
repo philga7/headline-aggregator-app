@@ -3,6 +3,7 @@ const rateLimitMiddleware = require('./security/middleware/rateLimit');
 const helmetMiddleware = require('./security/middleware/helmet');
 const corsMiddleware = require('./security/middleware/cors');
 const performanceMonitor = require('./security/monitoring/performance');
+const { initializeProcessHandlers } = require('../middleware/processHandler');
 
 const app = express();
 
@@ -13,6 +14,9 @@ app.use(corsMiddleware);
 
 // Initialize performance monitoring
 const observer = performanceMonitor.observe();
+
+// Initialize process handlers
+initializeProcessHandlers();
 
 // Example route with performance monitoring
 app.get('/api/resource', (req, res) => {
