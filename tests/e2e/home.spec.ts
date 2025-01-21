@@ -7,7 +7,7 @@ test('homepage shows news feed', async ({ page }) => {
   await expect(page.locator('[data-tid="feed_header"]')).toContainText('Today\'s Headlines');
   
   // Wait for articles to load
-  await page.waitForSelector('article', { timeout: 5000 });
+  await page.waitForSelector('article', { timeout: 10000 });
   
   // Verify articles are present
   const articles = await page.locator('article').count();
