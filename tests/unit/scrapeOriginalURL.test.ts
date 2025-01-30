@@ -1,9 +1,10 @@
 import { scrapeOriginalURL } from '@/utils/scrapeOriginalURL';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 const testUrl = 'https://example.com/article';
 
-jest.mock('node-fetch');
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('scrapeOriginalURL', () => {
   beforeEach(() => {
@@ -18,11 +19,20 @@ describe('scrapeOriginalURL', () => {
   });
 
   it('returns original URL when scraping fails', async () => {
-    global.fetch = jest.fn(() => 
-      Promise.reject(new Error('Failed to fetch'))
-    ) as jest.Mock;
+    mockedAxios.get.mockRejectedValueOnce(new Error('Failed to fetch'));
 
     const result = await scrapeOriginalURL(testUrl);
     expect(result).toBe(testUrl);
+  });
+
+  it('extracts external link when present', async () => {
+    const externalUrl = 'https://external-site.com/article';
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      data: `<html><body><a href="${externalUrl}">Link</a></body></html>`,
+    });
+
+    const result = await scrapeOriginalURL(testUrl);
+    expect(result).toBe(externalUrl);
   });
 });

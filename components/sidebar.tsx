@@ -15,8 +15,6 @@ export function Sidebar() {
 
   return (
     <motion.nav
-      initial={{ x: -300 }}
-      animate={{ x: 0 }}
       className="hidden md:flex w-64 bg-black border-r border-gray-800"
     >
       <div className="flex flex-col w-full p-4">
