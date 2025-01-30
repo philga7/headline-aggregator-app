@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { scrapeOriginalURL } from "@/utils/scrapeOriginalURL";
 
 const parser = new Parser();
@@ -8,8 +8,16 @@ const RSS_FEEDS = [
   "https://citizenfreepress.com/feed/",
 ];
 
-export async function GET() {
+export const dynamic = 'force-dynamic'; // This tells Next.js to never cache this route
+export const revalidate = 0; // This ensures we don't revalidate this route
+
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '0');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = page * limit;
+
     const feedPromises = RSS_FEEDS.map(async (feedUrl) => {
       try {
         const feed = await parser.parseURL(feedUrl);
@@ -42,12 +50,26 @@ export async function GET() {
       return new Date(b.pubDate!).getTime() - new Date(a.pubDate!).getTime();
     });
 
-    return NextResponse.json(articles);
+    // Apply pagination
+    const paginatedArticles = articles.slice(offset, offset + limit);
+
+    return NextResponse.json(paginatedArticles, {
+      headers: {
+        'Cache-Control': 'no-store, must-revalidate',
+        'Expires': '0',
+      },
+    });
   } catch (error) {
     console.error("Error in feed route:", error);
     return NextResponse.json(
       { error: "Failed to fetch news feeds" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, must-revalidate',
+          'Expires': '0',
+        },
+      }
     );
   }
 }

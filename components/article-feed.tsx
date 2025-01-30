@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 
@@ -15,26 +15,58 @@ export function ArticleFeed() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const loadingRef = useRef(false);
 
-  useEffect(() => {
-    fetchArticles();
-  }, []);
-
-  async function fetchArticles() {
+  const fetchArticles = useCallback(async (pageNum: number) => {
+    if (loadingRef.current) return;
     try {
-      const response = await fetch("/api/feed");
+      loadingRef.current = true;
+      const response = await fetch(`/api/feed?page=${pageNum}&limit=20`);
       if (!response.ok) throw new Error("Failed to fetch articles");
       const data = await response.json();
-      setArticles(data);
+      
+      if (data.length < 20) {
+        setHasMore(false);
+      }
+
+      setArticles(prev => pageNum === 0 ? data : [...prev, ...data]);
       setError(null);
     } catch (err) {
       setError("Failed to load articles. Please try again later.");
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  }
+  }, []);
 
-  if (loading) {
+  useEffect(() => {
+    fetchArticles(0);
+  }, [fetchArticles]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000 &&
+        hasMore &&
+        !loadingRef.current
+      ) {
+        setPage(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore]);
+
+  useEffect(() => {
+    if (page > 0) {
+      fetchArticles(page);
+    }
+  }, [page, fetchArticles]);
+
+  if (loading && articles.length === 0) {
     return (
       <div className="space-y-4">
         {[...Array(5)].map((_, i) => (
@@ -47,7 +79,7 @@ export function ArticleFeed() {
     );
   }
 
-  if (error) {
+  if (error && articles.length === 0) {
     return (
       <div className="flex items-center space-x-2 text-red-500">
         <AlertCircle className="w-5 h-5" />
@@ -57,17 +89,10 @@ export function ArticleFeed() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       {articles.map((article, index) => (
-        <motion.article
-          key={`${article.link}-${index}`} // Add index to make key unique
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
+        <article
+          key={`${article.link}-${index}`}
           className="group"
         >
           <a
@@ -85,8 +110,8 @@ export function ArticleFeed() {
               <span>{new Date(article.pubDate).toLocaleDateString()}</span>
             </div>
           </a>
-        </motion.article>
+        </article>
       ))}
-    </motion.div>
+    </div>
   );
 }
