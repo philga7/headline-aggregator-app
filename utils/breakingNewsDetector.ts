@@ -1,18 +1,23 @@
-import { HfInference } from '@huggingface/inference';
-import { z } from 'zod';
-import { db } from '@/lib/db';
-import { env } from '@/lib/env';
+// import { HfInference } from '@huggingface/inference';
+// import { z } from 'zod';
+// import { db } from '@/lib/db';
+// import { env } from '@/lib/env';
 
-const BreakingNewsSchema = z.object({
-  isBreaking: z.boolean(),
-  confidence: z.number().min(0).max(1),
-  urgencyScore: z.number().min(0).max(1),
-  timestamp: z.string().datetime(),
-});
+// const BreakingNewsSchema = z.object({
+//   isBreaking: z.boolean(),
+//   confidence: z.number().min(0).max(1),
+//   urgencyScore: z.number().min(0).max(1),
+//   timestamp: z.string().datetime(),
+// });
 
-type BreakingNewsAnalysis = z.infer<typeof BreakingNewsSchema>;
+// type BreakingNewsAnalysis = z.infer<typeof BreakingNewsSchema>;
 
-const hf = new HfInference(env.HUGGINGFACE_API_KEY);
+// const hf = new HfInference(env.HUGGINGFACE_API_KEY);
+
+interface BreakingNewsAnalysis {
+  isBreaking: boolean;
+  timestamp: string;
+}
 
 const BREAKING_INDICATORS = [
   'breaking',
@@ -22,29 +27,29 @@ const BREAKING_INDICATORS = [
   'developing',
   'alert',
   'live updates',
-  'breaking news',
+  'live',
   'critical update',
   'flash'
 ];
 
-export async function detectAndStoreBreakingNews(
-  title: string,
-  content: string,
-  source: string
-) {
-  const analysis = await detectBreakingNews(title, content);
+// export async function detectAndStoreBreakingNews(
+//   title: string,
+//   content: string,
+//   source: string
+// ) {
+//   const analysis = await detectBreakingNews(title, content);
   
-  await db.addNews({
-    title,
-    content,
-    source,
-    isBreaking: analysis.isBreaking,
-    urgencyScore: analysis.urgencyScore,
-    timestamp: analysis.timestamp
-  });
+//   await db.addNews({
+//     title,
+//     content,
+//     source,
+//     isBreaking: analysis.isBreaking,
+//     urgencyScore: analysis.urgencyScore,
+//     timestamp: analysis.timestamp
+//   });
 
-  return analysis;
-}
+//   return analysis;
+// }
 
 export async function detectBreakingNews(
   title: string,
@@ -57,26 +62,24 @@ export async function detectBreakingNews(
     );
 
     // Zero-shot classification using BART
-    const classification = await hf.zeroShotClassification({
-      model: 'facebook/bart-large-mnli',
-      inputs: `${title} ${content.substring(0, 300)}`,
-      parameters: {
-        candidate_labels: ['breaking news', 'regular news']
-      }
-    });
+    // const classification = await hf.zeroShotClassification({
+    //   model: 'facebook/bart-large-mnli',
+    //   inputs: `${title} ${content.substring(0, 300)}`,
+    //   parameters: {
+    //     candidate_labels: ['breaking news', 'regular news']
+    //   }
+    // });
 
     // Calculate urgency score based on both indicator presence and classification
-    const breakingNewsScore = classification[0].scores[0]; // Score for 'breaking news'
-    const urgencyScore = hasBreakingIndicators 
-      ? Math.max(0.7, breakingNewsScore)
-      : breakingNewsScore;
+    // const breakingNewsScore = classification[0].scores[0]; // Score for 'breaking news'
+    // const urgencyScore = hasBreakingIndicators 
+    //   ? Math.max(0.7, breakingNewsScore)
+    //   : breakingNewsScore;
 
-    return BreakingNewsSchema.parse({
-      isBreaking: urgencyScore > 0.6,
-      confidence: breakingNewsScore,
-      urgencyScore,
+    return {
+      isBreaking: hasBreakingIndicators,
       timestamp: new Date().toISOString()
-    });
+    };
   } catch (error) {
     console.error('Breaking news detection error:', error);
     throw new Error('Failed to analyze breaking news');
