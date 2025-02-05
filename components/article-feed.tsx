@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 import { BreakingNewsEvaluator } from "@/utils/breakingNewsEvaluator";
+import { ArticleHeadline } from "./article-headline";
 
 interface Article {
   title: string;
@@ -227,6 +228,12 @@ export function ArticleFeed() {
                   )}
                   {article.title}
                 </h2>
+
+                <ArticleHeadline 
+                  url={article.link} 
+                  className="text-sm text-gray-400 mt-2 mb-1" 
+                />
+
                 <div className="mt-2 text-sm text-gray-400">
                   <span>{article.source}</span>
                   <span className="mx-2">•</span>
