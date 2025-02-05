@@ -1,6 +1,7 @@
 import Parser from "rss-parser";
 import { NextRequest, NextResponse } from "next/server";
-import { scrapeOriginalURL } from "@/utils/scrapeOriginalURL";
+import { normalizeCFPFeed } from "@/utils/normalizers";
+import { NormalizedFeedItem, RawCFPFeedItem } from "@/types/Feed";
 
 const parser = new Parser();
 
@@ -21,24 +22,11 @@ export async function GET(request: NextRequest) {
     const feedPromises = RSS_FEEDS.map(async (feedUrl) => {
       try {
         const feed = await parser.parseURL(feedUrl);
-        const articlesWithOriginalUrls = await Promise.all(
-          feed.items.map(async (item) => {
-            const originalUrl = await scrapeOriginalURL(item.link || "");
-            const isExternalLink = originalUrl !== item.link;
-            
-            return {
-              title: item.title,
-              link: originalUrl, // Use the scraped URL instead of CFP URL
-              pubDate: item.pubDate,
-              // If we found an external link, try to extract the domain as the source
-              source: isExternalLink 
-                ? new URL(originalUrl).hostname.replace('www.', '')
-                : "Citizen Free Press",
-            };
-          })
-        );
-
-        return articlesWithOriginalUrls;
+        const validItems = feed.items.filter((item): item is (typeof item & Required<Pick<RawCFPFeedItem, 'title' | 'link'>>) => {
+          return Boolean(item.title && item.link);
+        });
+        const normalizedItems = await normalizeCFPFeed(validItems);
+        return normalizedItems;
       } catch (error) {
         console.error(`Error fetching feed ${feedUrl}:`, error);
         return [];
@@ -46,8 +34,8 @@ export async function GET(request: NextRequest) {
     });
 
     const feedResults = await Promise.all(feedPromises);
-    const articles = feedResults.flat().sort((a, b) => {
-      return new Date(b.pubDate!).getTime() - new Date(a.pubDate!).getTime();
+    const articles: NormalizedFeedItem[] = feedResults.flat().sort((a, b) => {
+      return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
     });
 
     // Apply pagination
